@@ -24,7 +24,7 @@ namespace SpeechToTextApiDemo
             {
                 foreach (var alternative in result.Alternatives)
                 {
-                    Console.WriteLine(alternative.Transcript);
+                    Console.WriteLine(alternative.Transcript.Words.Count);
                 }
             }
         }

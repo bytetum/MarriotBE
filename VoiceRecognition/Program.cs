@@ -8,7 +8,7 @@ namespace SpeechToTextApiDemo
     {
         public static void Main(string[] args)
         {
-            //System.Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", "C:\\Users\\hxt\\source\\repos\\Marriot Solution\\VoiceRecognition\\VoiceRecognition\\key.json");
+            System.Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", "C:\\Users\\hxt\\source\\repos\\Marriot Solution\\VoiceRecognition\\VoiceRecognition\\key.json");
             var speech = SpeechClient.Create();
             var config = new RecognitionConfig
             {

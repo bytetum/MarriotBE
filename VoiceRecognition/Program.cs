@@ -1,51 +1,94 @@
-﻿using Google.Cloud.Speech.V1;
-using Google.Apis.Auth.OAuth2;
-using System;
+﻿using System;
+using System.IO;
 using System.Text;
+using System.Threading.Tasks;
+using Google.Cloud.Speech.V1;
 
-namespace SpeechToTextApiDemo
+public class SpeechToTextTranscriber
 {
-    public class Program
+    public static async Task Main()
     {
-        public static void Main(string[] args)
+        // Set the path to your Google Cloud JSON credentials file
+        string credentialsFilePath = "C:\\Users\\hxt\\source\\repos\\Marriot Solution\\VoiceRecognition\\VoiceRecognition\\key.json";
+        Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credentialsFilePath);
+
+        string inputAudioFilePath = "C:\\Users\\hxt\\source\\repos\\Marriot Solution\\VoiceRecognition\\VoiceRecognition\\test10.mp3";
+        await TranscribeAudioAsync(inputAudioFilePath);
+    }
+
+    private static async Task TranscribeAudioAsync(string inputAudioFilePath)
+    {
+        var speechClient = SpeechClient.Create();
+        var diariConfig = new SpeakerDiarizationConfig
         {
-            System.Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", "C:\\Users\\hxt\\source\\repos\\Marriot Solution\\VoiceRecognition\\VoiceRecognition\\key.json");
-            var speech = SpeechClient.Create();
-            var DiarizationConfig1 = new SpeakerDiarizationConfig
-            {
-                EnableSpeakerDiarization = true,
-                MinSpeakerCount = 1,
-                MaxSpeakerCount = 6,
-            };
-            var config = new RecognitionConfig
-            {
-                Encoding = RecognitionConfig.Types.AudioEncoding.EncodingUnspecified,
-                SampleRateHertz = 16000,
-                EnableSpokenPunctuation = true,
-                EnableAutomaticPunctuation = true,
-                DiarizationConfig = DiarizationConfig1,
-                EnableWordConfidence = true,
-                LanguageCode = LanguageCodes.English.UnitedKingdom
-            };
-            var audio = RecognitionAudio.FromFile("C:\\Users\\hxt\\source\\repos\\Marriot Solution\\VoiceRecognition\\VoiceRecognition\\short-test.mp3");
+            EnableSpeakerDiarization = true,
+            MinSpeakerCount = 2,
+            MaxSpeakerCount = 6
+        };
 
-            var response = speech.Recognize(config, audio);
+        var config = new RecognitionConfig
+        {
+            SampleRateHertz = 16000, // Set the appropriate language code
+            EnableAutomaticPunctuation = true,
+            LanguageCode = LanguageCodes.Vietnamese.Vietnam,
+            Model = "latest_long",
+            DiarizationConfig = diariConfig,
+        };
 
-            foreach (var result in response.Results)
+        var audio = RecognitionAudio.FromFile(inputAudioFilePath);
+        var response = await speechClient.LongRunningRecognizeAsync(config, audio);
+
+        // Poll for the completed response (or check the operation's status)
+        var completedResponse = response.PollUntilCompleted();
+        if (!completedResponse.IsCompleted)
+        {
+            Console.WriteLine("Error: " + completedResponse.Exception);
+            return;
+        }
+
+        var lastResult = completedResponse.Result.Results[completedResponse.Result.Results.Count - 1];
+        var wordsInfo = lastResult.Alternatives[0].Words;
+
+        int tag = 1;
+        string speaker = "";
+        string transcript = "";
+
+        foreach (var wordInfo in wordsInfo)
+        {
+            if (wordInfo.SpeakerTag == tag)
             {
-                foreach (var alternative in result.Alternatives)
-                {
-                    foreach (var work in alternative.Words)
-                    {
-                        Console.OutputEncoding = Encoding.UTF8;
-                        Console.WriteLine("Work: " + work.Word + "   |   "+ "Confident: " + work.Confidence);
-                    }
-
-                    Console.WriteLine(alternative.Transcript);
-                    Console.WriteLine("End a sentence \n");
-                }
-                    
+                speaker += " " + wordInfo.Word;
+            }
+            else
+            {
+                transcript += $"speaker {tag}: {speaker}\n";
+                tag = wordInfo.SpeakerTag;
+                speaker = wordInfo.Word;
             }
         }
+
+        transcript += $"speaker {tag}: {speaker}";
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.WriteLine(transcript);
+
+        /*var speakersTranscripts = new Dictionary<int, List<string>>();
+        
+        foreach (var result in completedResponse.Result.Results)
+        {
+            foreach (var wordInfo in result.Alternatives[0].Words)
+            {
+                if (!speakersTranscripts.ContainsKey(wordInfo.SpeakerTag))
+                {
+                    speakersTranscripts[wordInfo.SpeakerTag] = new List<string>();
+                }
+
+                speakersTranscripts[wordInfo.SpeakerTag].Add(wordInfo.Word);
+            }
+        }
+
+        foreach (var speaker in speakersTranscripts.Keys)
+        {
+            Console.WriteLine($"Speaker {speaker}: {string.Join(" ", speakersTranscripts[speaker])}");
+        } */
     }
 }

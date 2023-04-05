@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Google.Apis" Version="1.60.0" />
     <PackageReference Include="Google.Cloud.Speech.V1" Version="3.4.0" />
+    <PackageReference Include="System.Linq" Version="4.3.0" />
   </ItemGroup>
 
 </Project>
